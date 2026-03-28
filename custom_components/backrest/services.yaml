@@ -1,0 +1,176 @@
+trigger_backup:
+  name: Trigger Backup
+  description: Trigger a backup for a specific Backrest plan.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    plan_id:
+      name: Plan ID
+      description: The ID of the plan to back up (as configured in Backrest).
+      required: true
+      example: "daily-home"
+      selector:
+        text:
+
+cancel_operation:
+  name: Cancel Operation
+  description: Cancel a currently running Backrest operation.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    operation_id:
+      name: Operation ID
+      description: The numeric ID of the operation to cancel.
+      required: true
+      example: 42
+      selector:
+        number:
+          min: 1
+          max: 9999999
+          mode: box
+
+run_repo_task:
+  name: Run Repository Task
+  description: Run a maintenance task (prune, check, stats, unlock) on a Backrest repository.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    repo_id:
+      name: Repository ID
+      description: The ID of the repository to operate on.
+      required: true
+      example: "s3-main"
+      selector:
+        text:
+    task:
+      name: Task
+      description: The maintenance task to run.
+      required: true
+      selector:
+        select:
+          options:
+            - label: Prune (remove old snapshots)
+              value: prune
+            - label: Check (verify integrity)
+              value: check
+            - label: Refresh Stats
+              value: stats
+            - label: Unlock (remove stale lock)
+              value: unlock
+
+forget_snapshots:
+  name: Forget Snapshots
+  description: Apply the retention policy to a plan (forget old snapshots).
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    plan_id:
+      name: Plan ID
+      description: The ID of the plan to apply retention policy to.
+      required: true
+      example: "daily-home"
+      selector:
+        text:
+    repo_id:
+      name: Repository ID
+      description: The ID of the repository (optional, inferred from plan if omitted).
+      required: false
+      example: "s3-main"
+      selector:
+        text:
+
+list_snapshots:
+  name: List Snapshots
+  description: >
+    List snapshots for a repository. Returns snapshot data as a service response.
+    Use in automations with `response_variable` to access the snapshot list.
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    repo_id:
+      name: Repository ID
+      description: The ID of the repository to list snapshots from.
+      required: true
+      example: "s3-main"
+      selector:
+        text:
+    plan_id:
+      name: Plan ID
+      description: Optional — filter snapshots by plan.
+      required: false
+      example: "daily-home"
+      selector:
+        text:
+    tag:
+      name: Tag
+      description: Optional — filter snapshots by tag.
+      required: false
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: Maximum number of snapshots to return (default 10, max 500).
+      required: false
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box
+
+set_stale_threshold:
+  name: Set Stale Backup Threshold
+  description: >
+    Set the number of hours after which a plan's "Backup Stale" binary sensor turns ON.
+    Default is 25 hours (covers daily backups with 1-hour slack).
+  fields:
+    config_entry_id:
+      name: Config Entry ID
+      description: The ID of the Backrest config entry to target.
+      required: true
+      selector:
+        config_entry:
+          integration: backrest
+    plan_id:
+      name: Plan ID
+      description: The plan to set the threshold for.
+      required: true
+      example: "daily-home"
+      selector:
+        text:
+    threshold_hours:
+      name: Threshold (hours)
+      description: How many hours since last backup before the stale sensor triggers.
+      required: true
+      default: 25
+      selector:
+        number:
+          min: 1
+          max: 720
+          unit_of_measurement: hours
+          mode: slider

@@ -1,0 +1,13 @@
+{
+  "domain": "backrest",
+  "name": "Backrest Backup Manager",
+  "version": "0.1.0",
+  "codeowners": ["@vakhariaheet"],
+  "config_flow": true,
+  "documentation": "https://github.com/vakhariaheet/backrest-hacs",
+  "issue_tracker": "https://github.com/vakhariaheet/backrest-hacs/issues",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "requirements": ["aiohttp>=3.9.0", "croniter>=2.0.1"],
+  "dependencies": []
+}

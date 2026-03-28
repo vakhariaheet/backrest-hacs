@@ -1,0 +1,102 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Backrest",
+        "description": "Enter the connection details for your Backrest instance.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "use_ssl": "Use HTTPS",
+          "verify_ssl": "Verify SSL certificate (disable for self-signed certs)",
+          "username": "Username (leave blank if auth disabled)",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate with Backrest",
+        "description": "Your Backrest credentials have expired or changed. Please enter new credentials for {host}.",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Backrest connection",
+        "description": "Update the host, port, or SSL setting for your Backrest instance.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "use_ssl": "Use HTTPS",
+          "verify_ssl": "Verify SSL certificate (disable for self-signed certs)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to Backrest. Check the host and port.",
+      "invalid_auth": "Invalid username or password.",
+      "unknown": "Unexpected error. Check the logs for details."
+    },
+    "abort": {
+      "already_configured": "A Backrest instance at this host:port is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Backrest Options",
+        "data": {
+          "scan_interval": "Poll interval (seconds)",
+          "default_stale_threshold_hours": "Default stale backup threshold (hours)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "repo_count": { "name": "Repository Count" },
+      "plan_count": { "name": "Plan Count" },
+      "active_operations": { "name": "Active Operations" },
+      "snapshot_count": { "name": "Snapshot Count" },
+      "total_size": { "name": "Total Size" },
+      "uncompressed_size": { "name": "Uncompressed Size" },
+      "compression_ratio": { "name": "Compression Ratio" },
+      "last_backup_time": { "name": "Last Backup" },
+      "last_backup_status": {
+        "name": "Last Backup Status",
+        "state": {
+          "STATUS_SUCCESS": "Success",
+          "STATUS_WARNING": "Warning",
+          "STATUS_ERROR": "Error",
+          "STATUS_USER_CANCELLED": "Cancelled by User",
+          "STATUS_SYSTEM_CANCELLED": "Cancelled by System",
+          "STATUS_UNKNOWN": "Unknown"
+        }
+      },
+      "backup_duration": { "name": "Last Backup Duration" },
+      "bytes_added": { "name": "Bytes Added (Last)" },
+      "files_new": { "name": "New Files (Last)" },
+      "bytes_added_30d": { "name": "Bytes Added (30 Days)" },
+      "backup_count_30d": { "name": "Backup Count (30 Days)" },
+      "failure_count_30d": { "name": "Failure Count (30 Days)" },
+      "next_backup": { "name": "Next Scheduled Backup" },
+      "hours_since_backup": { "name": "Hours Since Last Backup" }
+    },
+    "binary_sensor": {
+      "connected": { "name": "Connected" },
+      "is_running": { "name": "Backup Running" },
+      "last_backup_failed": { "name": "Last Backup Failed" },
+      "backup_stale": { "name": "Backup Stale" }
+    },
+    "button": {
+      "trigger_backup": { "name": "Trigger Backup" },
+      "forget_snapshots": { "name": "Apply Retention Policy" },
+      "run_prune": { "name": "Run Prune" },
+      "run_check": { "name": "Run Integrity Check" },
+      "refresh_stats": { "name": "Refresh Statistics" },
+      "unlock_repo": { "name": "Unlock Repository" }
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "entity": {
+    "sensor": {
+      "repo_count": { "default": "mdi:harddisk" },
+      "plan_count": { "default": "mdi:calendar-check" },
+      "active_operations": { "default": "mdi:backup-restore" },
+      "snapshot_count": { "default": "mdi:camera" },
+      "total_size": { "default": "mdi:harddisk" },
+      "uncompressed_size": { "default": "mdi:harddisk-plus" },
+      "compression_ratio": { "default": "mdi:archive-arrow-down" },
+      "last_backup_time": { "default": "mdi:clock-check" },
+      "last_backup_status": {
+        "default": "mdi:check-circle",
+        "state": {
+          "STATUS_SUCCESS": "mdi:check-circle",
+          "STATUS_WARNING": "mdi:alert-circle",
+          "STATUS_ERROR": "mdi:close-circle",
+          "STATUS_USER_CANCELLED": "mdi:cancel",
+          "STATUS_SYSTEM_CANCELLED": "mdi:cancel",
+          "STATUS_UNKNOWN": "mdi:help-circle"
+        }
+      },
+      "backup_duration": { "default": "mdi:timer" },
+      "bytes_added": { "default": "mdi:database-plus" },
+      "files_new": { "default": "mdi:file-plus" },
+      "bytes_added_30d": { "default": "mdi:database-arrow-up" },
+      "backup_count_30d": { "default": "mdi:counter" },
+      "failure_count_30d": { "default": "mdi:alert-circle-outline" },
+      "next_backup": { "default": "mdi:calendar-clock" },
+      "hours_since_backup": { "default": "mdi:clock-alert" }
+    },
+    "binary_sensor": {
+      "connected": {
+        "default": "mdi:lan-disconnect",
+        "state": {
+          "true": "mdi:lan-connect",
+          "false": "mdi:lan-disconnect"
+        }
+      },
+      "is_running": {
+        "default": "mdi:backup-restore",
+        "state": {
+          "true": "mdi:backup-restore",
+          "false": "mdi:check-circle-outline"
+        }
+      },
+      "last_backup_failed": {
+        "default": "mdi:alert-circle",
+        "state": {
+          "true": "mdi:alert-circle",
+          "false": "mdi:check-circle"
+        }
+      },
+      "backup_stale": {
+        "default": "mdi:clock-alert-outline",
+        "state": {
+          "true": "mdi:clock-alert",
+          "false": "mdi:clock-check-outline"
+        }
+      }
+    },
+    "button": {
+      "trigger_backup": { "default": "mdi:backup-restore" },
+      "forget_snapshots": { "default": "mdi:delete-clock" },
+      "run_prune": { "default": "mdi:broom" },
+      "run_check": { "default": "mdi:shield-check" },
+      "refresh_stats": { "default": "mdi:chart-bar" },
+      "unlock_repo": { "default": "mdi:lock-open" }
+    }
+  }
+}
