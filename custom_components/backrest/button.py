@@ -63,7 +63,7 @@ PLAN_BUTTONS: tuple[BackrestPlanButtonDescription, ...] = (
         key=KEY_BTN_FORGET,
         translation_key=KEY_BTN_FORGET,
         icon="mdi:delete-clock",
-        press_fn=lambda api, plan_id: api.forget_snapshots(plan_id, ""),
+        press_fn=lambda api, plan_id: api.forget_snapshots(plan_id),
     ),
 )
 
