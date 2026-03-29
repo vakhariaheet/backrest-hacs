@@ -128,36 +128,30 @@ def mock_dashboard_response() -> dict:
     return {
         "repoSummaries": [
             {
-                "repoId": "s3-main",
-                "repoStats": {
-                    "snapshotCount": 42,
-                    "totalSize": 10_000_000_000,  # 10 GB
-                    "totalUncompressedSize": 25_000_000_000,  # 25 GB
-                    "compressionRatio": 2.5,
-                },
+                "id": "s3-main",
+                "bytesAddedLast30days": "10000000000",
+                "bytesScannedLast30days": "25000000000",
+                "backupsSuccessLast30days": "42",
             },
             {
-                "repoId": "local-nas",
-                "repoStats": {
-                    "snapshotCount": 8,
-                    "totalSize": 5_000_000_000,
-                    "totalUncompressedSize": 8_000_000_000,
-                    "compressionRatio": 1.6,
-                },
+                "id": "local-nas",
+                "bytesAddedLast30days": "5000000000",
+                "bytesScannedLast30days": "8000000000",
+                "backupsSuccessLast30days": "8",
             },
         ],
         "planSummaries": [
             {
-                "planId": "daily-home",
-                "bytesAdded": 2_000_000_000,
-                "backupCount": 28,
-                "failedBackupCount": 1,
+                "id": "daily-home",
+                "bytesAddedLast30days": "2000000000",
+                "backupsSuccessLast30days": "28",
+                "backupsFailedLast30days": "1",
             },
             {
-                "planId": "weekly-archive",
-                "bytesAdded": 500_000_000,
-                "backupCount": 4,
-                "failedBackupCount": 0,
+                "id": "weekly-archive",
+                "bytesAddedLast30days": "500000000",
+                "backupsSuccessLast30days": "4",
+                "backupsFailedLast30days": "0",
             },
         ],
     }
@@ -180,8 +174,8 @@ def mock_operations_response() -> dict:
                 "operationBackup": {
                     "lastStatus": {
                         "summary": {
-                            "filesNew": 37,
-                            "dataAdded": 1_200_000,
+                            "filesNew": "37",
+                            "dataAdded": "1200000",
                         }
                     }
                 },
@@ -196,8 +190,8 @@ def mock_operations_response() -> dict:
                 "operationBackup": {
                     "lastStatus": {
                         "summary": {
-                            "filesNew": 5,
-                            "dataAdded": 500_000,
+                            "filesNew": "5",
+                            "dataAdded": "500000",
                         }
                     }
                 },

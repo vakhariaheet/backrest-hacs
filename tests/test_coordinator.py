@@ -139,6 +139,7 @@ class TestParseOperations:
                 "status": OP_STATUS_SUCCESS,
                 "unixTimeStartMs": now_ms - 7_200_000,  # 2h ago
                 "unixTimeEndMs": now_ms - 7_100_000,
+                "operationBackup": {"lastStatus": {"summary": {"dataAdded": "100"}}},
             },
             {
                 "id": "2",
@@ -146,6 +147,7 @@ class TestParseOperations:
                 "status": OP_STATUS_ERROR,
                 "unixTimeStartMs": now_ms - 3_600_000,  # 1h ago (newer)
                 "unixTimeEndMs": now_ms - 3_550_000,
+                "operationBackup": {"lastStatus": {"summary": {}}},
             },
         ]
         _parse_operations(ops, plans)
@@ -193,22 +195,15 @@ class TestParseDashboard:
         dashboard = {
             "repoSummaries": [
                 {
-                    "repoId": "s3-main",
-                    "repoStats": {
-                        "snapshotCount": 50,
-                        "totalSize": 10_000_000_000,
-                        "totalUncompressedSize": 25_000_000_000,
-                        "compressionRatio": 2.5,
-                    },
+                    "id": "s3-main",
+                    "bytesAddedLast30days": "10000000000",
+                    "backupsSuccessLast30days": "42",
                 }
             ],
             "planSummaries": [],
         }
         _parse_dashboard(dashboard, repos, plans)
-        repo = repos["s3-main"]
-        assert repo.snapshot_count == 50
-        assert repo.total_size_bytes == 10_000_000_000
-        assert repo.compression_ratio == 2.5
+        # Repo has no settable fields from dashboard currently — just verify no crash
 
     def test_parses_plan_stats(self):
         repos, plans = self._make_repos_and_plans()
@@ -216,10 +211,10 @@ class TestParseDashboard:
             "repoSummaries": [],
             "planSummaries": [
                 {
-                    "planId": "daily-home",
-                    "bytesAdded": 2_000_000_000,
-                    "backupCount": 30,
-                    "failedBackupCount": 2,
+                    "id": "daily-home",
+                    "bytesAddedLast30days": "2000000000",
+                    "backupsSuccessLast30days": "30",
+                    "backupsFailedLast30days": "2",
                 }
             ],
         }
@@ -357,6 +352,7 @@ class TestEventFiring:
                     "status": OP_STATUS_SUCCESS,
                     "unixTimeStartMs": now_ms - 60_000,
                     "unixTimeEndMs": now_ms,
+                    "operationBackup": {"lastStatus": {"summary": {"dataAdded": "1200000"}}},
                 }
             ]
         }
@@ -398,6 +394,7 @@ class TestEventFiring:
                     "status": OP_STATUS_ERROR,
                     "unixTimeStartMs": now_ms - 60_000,
                     "unixTimeEndMs": now_ms,
+                    "operationBackup": {"lastStatus": {"summary": {}}},
                 }
             ]
         }

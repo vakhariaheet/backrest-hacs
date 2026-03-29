@@ -1,7 +1,7 @@
 {
   "domain": "backrest",
   "name": "Backrest Backup Manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "codeowners": ["@vakhariaheet"],
   "config_flow": true,
   "documentation": "https://github.com/vakhariaheet/backrest-hacs",

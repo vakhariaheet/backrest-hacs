@@ -30,9 +30,6 @@ def _make_data(
     plan_running=False,
     last_backup_hours_ago=1,
     failure_count_30d=0,
-    snapshot_count=42,
-    total_size_bytes=10_000_000_000,
-    compression_ratio=2.5,
 ) -> BackrestData:
     """Build a BackrestData object with configurable fields."""
     last_backup = datetime.now(timezone.utc) - timedelta(hours=last_backup_hours_ago)
@@ -43,10 +40,6 @@ def _make_data(
             "s3-main": RepoData(
                 id="s3-main",
                 uri="s3:bucket",
-                snapshot_count=snapshot_count,
-                total_size_bytes=total_size_bytes,
-                total_uncompressed_bytes=total_size_bytes * 2,
-                compression_ratio=compression_ratio,
             )
         },
         plans={
@@ -136,43 +129,6 @@ class TestInstanceSensors:
         sensor = BackrestInstanceSensor(coord, desc)
         assert sensor.native_value == 1
 
-
-class TestRepoSensors:
-    def test_snapshot_count(self):
-        from custom_components.backrest.sensor import BackrestRepoSensor, REPO_SENSORS
-
-        data = _make_data(snapshot_count=42)
-        coord = _make_coordinator(data)
-        desc = next(s for s in REPO_SENSORS if s.key == "snapshot_count")
-        sensor = BackrestRepoSensor(coord, "s3-main", desc)
-        assert sensor.native_value == 42
-
-    def test_total_size(self):
-        from custom_components.backrest.sensor import BackrestRepoSensor, REPO_SENSORS
-
-        data = _make_data(total_size_bytes=10_000_000_000)
-        coord = _make_coordinator(data)
-        desc = next(s for s in REPO_SENSORS if s.key == "total_size")
-        sensor = BackrestRepoSensor(coord, "s3-main", desc)
-        assert sensor.native_value == 10_000_000_000
-
-    def test_compression_ratio(self):
-        from custom_components.backrest.sensor import BackrestRepoSensor, REPO_SENSORS
-
-        data = _make_data(compression_ratio=2.5)
-        coord = _make_coordinator(data)
-        desc = next(s for s in REPO_SENSORS if s.key == "compression_ratio")
-        sensor = BackrestRepoSensor(coord, "s3-main", desc)
-        assert sensor.native_value == 2.5
-
-    def test_unavailable_for_missing_repo(self):
-        from custom_components.backrest.sensor import BackrestRepoSensor, REPO_SENSORS
-
-        data = _make_data()
-        coord = _make_coordinator(data)
-        desc = next(s for s in REPO_SENSORS if s.key == "snapshot_count")
-        sensor = BackrestRepoSensor(coord, "nonexistent-repo", desc)
-        assert sensor.native_value is None
 
 
 class TestPlanSensors:

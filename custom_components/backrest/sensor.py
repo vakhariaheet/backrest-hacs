@@ -25,7 +25,6 @@ from .const import (
     KEY_BACKUP_DURATION,
     KEY_BYTES_ADDED,
     KEY_BYTES_ADDED_30D,
-    KEY_COMPRESSION_RATIO,
     KEY_FAILURE_COUNT_30D,
     KEY_FILES_NEW,
     KEY_HOURS_SINCE_BACKUP,
@@ -34,9 +33,6 @@ from .const import (
     KEY_NEXT_BACKUP,
     KEY_PLAN_COUNT,
     KEY_REPO_COUNT,
-    KEY_SNAPSHOT_COUNT,
-    KEY_TOTAL_SIZE,
-    KEY_UNCOMPRESSED_SIZE,
     KEY_ACTIVE_OPERATIONS,
 )
 from .coordinator import BackrestCoordinator, BackrestData, PlanData, RepoData
@@ -104,43 +100,7 @@ INSTANCE_SENSORS: tuple[BackrestSensorDescription, ...] = (
 # Per-repo sensor descriptions
 # ---------------------------------------------------------------------------
 
-REPO_SENSORS: tuple[BackrestRepoSensorDescription, ...] = (
-    BackrestRepoSensorDescription(
-        key=KEY_SNAPSHOT_COUNT,
-        translation_key=KEY_SNAPSHOT_COUNT,
-        icon="mdi:camera",
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda r: r.snapshot_count,
-    ),
-    BackrestRepoSensorDescription(
-        key=KEY_TOTAL_SIZE,
-        translation_key=KEY_TOTAL_SIZE,
-        device_class=SensorDeviceClass.DATA_SIZE,
-        native_unit_of_measurement=UnitOfInformation.BYTES,
-        suggested_unit_of_measurement=UnitOfInformation.GIGABYTES,
-        suggested_display_precision=2,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda r: r.total_size_bytes,
-    ),
-    BackrestRepoSensorDescription(
-        key=KEY_UNCOMPRESSED_SIZE,
-        translation_key=KEY_UNCOMPRESSED_SIZE,
-        device_class=SensorDeviceClass.DATA_SIZE,
-        native_unit_of_measurement=UnitOfInformation.BYTES,
-        suggested_unit_of_measurement=UnitOfInformation.GIGABYTES,
-        suggested_display_precision=2,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda r: r.total_uncompressed_bytes,
-    ),
-    BackrestRepoSensorDescription(
-        key=KEY_COMPRESSION_RATIO,
-        translation_key=KEY_COMPRESSION_RATIO,
-        icon="mdi:archive-arrow-down",
-        suggested_display_precision=2,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda r: round(r.compression_ratio, 2) if r.compression_ratio else None,
-    ),
-)
+REPO_SENSORS: tuple[BackrestRepoSensorDescription, ...] = ()
 
 # ---------------------------------------------------------------------------
 # Per-plan sensor descriptions
@@ -184,12 +144,14 @@ PLAN_SENSORS: tuple[BackrestPlanSensorDescription, ...] = (
         device_class=SensorDeviceClass.ENUM,
         icon="mdi:check-circle",
         options=[
+            "STATUS_UNKNOWN",
+            "STATUS_PENDING",
+            "STATUS_INPROGRESS",
             "STATUS_SUCCESS",
             "STATUS_WARNING",
             "STATUS_ERROR",
             "STATUS_USER_CANCELLED",
             "STATUS_SYSTEM_CANCELLED",
-            "STATUS_UNKNOWN",
         ],
         value_fn=lambda p: p.last_backup_status,
     ),

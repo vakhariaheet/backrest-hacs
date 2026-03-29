@@ -221,19 +221,19 @@ class BackrestApiClient:
 
     async def trigger_backup(self, plan_id: str) -> dict:
         """Trigger a backup for the given plan."""
+        # Backup RPC takes google.protobuf.StringValue → {"value": plan_id}
         return await self._request(
             BACKREST_SERVICE_PATH,
             METHOD_BACKUP,
-            {"planId": plan_id},
+            {"value": plan_id},
         )
 
-    async def forget_snapshots(self, plan_id: str, repo_id: str) -> dict:
+    async def forget_snapshots(self, plan_id: str, repo_id: str = "") -> dict:
         """Apply retention policy (forget old snapshots) for a plan."""
-        return await self._request(
-            BACKREST_SERVICE_PATH,
-            METHOD_FORGET,
-            {"planId": plan_id, "repoId": repo_id},
-        )
+        body: dict = {"planId": plan_id}
+        if repo_id:
+            body["repoId"] = repo_id
+        return await self._request(BACKREST_SERVICE_PATH, METHOD_FORGET, body)
 
     async def restore_snapshot(
         self,

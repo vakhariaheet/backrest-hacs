@@ -22,6 +22,7 @@ from .const import (
     EVENT_CONNECTION_LOST,
     EVENT_CONNECTION_RESTORED,
     OP_STATUSES_FAILED,
+    OP_STATUSES_FINISHED,
     OP_STATUSES_RUNNING,
     OP_STATUS_INPROGRESS,
     OP_STATUS_PENDING,
@@ -43,10 +44,6 @@ class RepoData:
     id: str
     uri: str
     guid: str = ""
-    snapshot_count: int = 0
-    total_size_bytes: int = 0
-    total_uncompressed_bytes: int = 0
-    compression_ratio: float = 1.0
 
 
 @dataclass
@@ -85,11 +82,11 @@ class BackrestData:
 # ---------------------------------------------------------------------------
 
 
-def _ms_to_datetime(ms: int | None) -> Optional[datetime]:
-    """Convert unix milliseconds to an aware UTC datetime."""
+def _ms_to_datetime(ms: int | str | None) -> Optional[datetime]:
+    """Convert unix milliseconds (int or string) to an aware UTC datetime."""
     if not ms:
         return None
-    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
+    return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc)
 
 
 def _parse_operations(
@@ -102,7 +99,7 @@ def _parse_operations(
 
     for op in sorted(
         operations,
-        key=lambda o: o.get("unixTimeStartMs", 0),
+        key=lambda o: int(o.get("unixTimeStartMs") or 0),
         reverse=True,
     ):
         plan_id = op.get("planId", "")
@@ -114,14 +111,21 @@ def _parse_operations(
 
         plan = plans[plan_id]
 
-        # Mark running ops
+        # Mark running ops (any op type that is actively in-progress)
         if status in OP_STATUSES_RUNNING:
             plan.is_running = True
             if op_id:
                 plan.active_operation_id = int(op_id)
 
-        # Record the last completed operation (once per plan)
-        if plan_id not in seen_plan_last and status not in OP_STATUSES_RUNNING:
+        # Record the last completed *backup* operation (once per plan).
+        # Skip non-backup ops (operationForget, operationIndexSnapshot, etc.)
+        # and ops with no actual backup data (e.g., empty PENDING operationBackup).
+        op_backup = op.get("operationBackup")
+        if op_backup is None:
+            continue  # not a backup op at all
+
+        last_status_data = op_backup.get("lastStatus", {})
+        if plan_id not in seen_plan_last and status in OP_STATUSES_FINISHED and last_status_data:
             seen_plan_last.add(plan_id)
             plan.last_backup_status = status
             plan.last_backup_time = _ms_to_datetime(op.get("unixTimeStartMs"))
@@ -129,18 +133,12 @@ def _parse_operations(
             start_ms = op.get("unixTimeStartMs", 0)
             end_ms = op.get("unixTimeEndMs", 0)
             if start_ms and end_ms:
-                plan.last_backup_duration_seconds = (end_ms - start_ms) / 1000
+                plan.last_backup_duration_seconds = (int(end_ms) - int(start_ms)) / 1000
 
-            # Extract bytes/files from the nested backup op summary
-            op_backup = op.get("operationBackup", {})
-            last_status = op_backup.get("lastStatus", {})
-            summary = last_status.get("summary", {})
-            if summary:
-                plan.last_backup_bytes_added = summary.get("dataBlobsCount")
-                plan.last_backup_files_new = summary.get("filesNew")
-                size_info = summary.get("dataAdded")
-                if size_info:
-                    plan.last_backup_bytes_added = int(size_info)
+            summary = last_status_data.get("summary", {})
+            if summary is not None:
+                plan.last_backup_files_new = int(summary.get("filesNew") or 0)
+                plan.last_backup_bytes_added = int(summary.get("dataAdded") or 0)
 
 
 def _parse_dashboard(
@@ -149,27 +147,13 @@ def _parse_dashboard(
     plans: dict[str, PlanData],
 ) -> None:
     """Extract stats from the SummaryDashboard response."""
-    for summary in dashboard.get("repoSummaries", []):
-        repo_id = summary.get("repoId", "")
-        if repo_id in repos:
-            repo = repos[repo_id]
-            stats = summary.get("repoStats", {})
-            repo.snapshot_count = int(stats.get("snapshotCount", 0))
-            repo.total_size_bytes = int(stats.get("totalSize", 0))
-            repo.total_uncompressed_bytes = int(
-                stats.get("totalUncompressedSize", 0)
-            )
-            ratio = stats.get("compressionRatio")
-            if ratio:
-                repo.compression_ratio = float(ratio)
-
     for summary in dashboard.get("planSummaries", []):
-        plan_id = summary.get("planId", "")
+        plan_id = summary.get("id", "")
         if plan_id in plans:
             plan = plans[plan_id]
-            plan.bytes_added_30d = int(summary.get("bytesAdded", 0))
-            plan.backup_count_30d = int(summary.get("backupCount", 0))
-            plan.failure_count_30d = int(summary.get("failedBackupCount", 0))
+            plan.bytes_added_30d = int(summary.get("bytesAddedLast30days", 0) or 0)
+            plan.backup_count_30d = int(summary.get("backupsSuccessLast30days", 0) or 0)
+            plan.failure_count_30d = int(summary.get("backupsFailedLast30days", 0) or 0)
 
 
 # ---------------------------------------------------------------------------
@@ -209,10 +193,10 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
     async def _async_update_data(self) -> BackrestData:
         """Fetch all data from Backrest in parallel and return BackrestData."""
         try:
-            config_resp, dashboard_resp, ops_resp = await asyncio.gather(
+            # Step 1: fetch config and dashboard in parallel
+            config_resp, dashboard_resp = await asyncio.gather(
                 self._api.get_config(),
                 self._api.get_summary_dashboard(),
-                self._api.get_operations(),
                 return_exceptions=False,
             )
         except BackrestAuthError as err:
@@ -258,8 +242,32 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
                     schedule_cron=cron,
                 )
 
+        # Step 2: fetch operations per-repo in parallel (Backrest requires a
+        # non-empty selector — sending an empty body causes a 500 "empty selector")
+        all_operations: list[dict] = []
+        if data.repos:
+            try:
+                op_results = await asyncio.gather(
+                    *[
+                        self._api.get_operations(repo_id=repo_id, only_last=100)
+                        for repo_id in data.repos
+                    ],
+                    return_exceptions=False,
+                )
+                for result in op_results:
+                    all_operations.extend(result.get("operations", []))
+            except BackrestAuthError as err:
+                raise ConfigEntryAuthFailed(
+                    f"Backrest authentication failed: {err}"
+                ) from err
+            except BackrestCannotConnectError as err:
+                self._fire_connection_lost()
+                raise UpdateFailed(f"Cannot connect to Backrest: {err}") from err
+            except BackrestServerError as err:
+                raise UpdateFailed(f"Backrest server error: {err}") from err
+
         # Parse operations into plan data
-        operations = ops_resp.get("operations", [])
+        operations = all_operations
         _parse_operations(operations, data.plans)
 
         # Active operations
@@ -270,7 +278,13 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
         ]
 
         # Parse dashboard stats
+        _LOGGER.debug("Dashboard response: %s", dashboard_resp)
+        if operations:
+            _LOGGER.debug("Sample operation fields: %s", operations[0])
         _parse_dashboard(dashboard_resp, data.repos, data.plans)
+
+        for plan_id, plan in data.plans.items():
+            _LOGGER.debug("Parsed plan %s: %s", plan_id, plan)
 
         data.last_poll_success = True
 
