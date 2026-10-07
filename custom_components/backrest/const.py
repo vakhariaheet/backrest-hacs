@@ -97,6 +97,10 @@ KEY_PLAN_COUNT = "plan_count"
 KEY_ACTIVE_OPERATIONS = "active_operations"
 KEY_CONNECTED = "connected"
 
+# Repo
+KEY_TOTAL_SIZE = "total_size"
+KEY_SNAPSHOT_COUNT = "snapshot_count"
+
 # Plan
 KEY_LAST_BACKUP_TIME = "last_backup_time"
 KEY_LAST_BACKUP_STATUS = "last_backup_status"

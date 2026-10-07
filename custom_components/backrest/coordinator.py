@@ -44,6 +44,8 @@ class RepoData:
     id: str
     uri: str
     guid: str = ""
+    total_size: int = 0
+    snapshot_count: int = 0
 
 
 @dataclass
@@ -75,6 +77,39 @@ class BackrestData:
     plans: dict[str, PlanData] = field(default_factory=dict)
     active_operation_ids: list[int] = field(default_factory=list)
     last_poll_success: bool = True
+
+
+# ---------------------------------------------------------------------------
+# Helper: parse operations into repo-level summary
+# ---------------------------------------------------------------------------
+
+
+def _parse_system_operations(
+    operations: list[dict],
+    repos: dict[str, RepoData],
+) -> None:
+    """Extract repo stats from a list of operations."""
+    seen_stats_repo: set[str] = set()
+
+    for op in sorted(
+        operations,
+        key=lambda o: int(o.get("unixTimeStartMs") or 0),
+        reverse=True,
+    ):
+        repo_id = op.get("repoId", "")
+        if not repo_id or repo_id not in repos:
+            continue
+
+        stats = op.get("operationStats", {}).get("stats")
+        if stats is None:
+            continue
+
+        if repo_id not in seen_stats_repo:
+            seen_stats_repo.add(repo_id)
+            repo = repos[repo_id]
+            repo.total_size = stats.get("totalSize")
+            repo.snapshot_count = stats.get("snapshotCount")
+            continue
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +280,7 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
         # Step 2: fetch operations per-repo in parallel (Backrest requires a
         # non-empty selector — sending an empty body causes a 500 "empty selector")
         all_operations: list[dict] = []
+        system_operations: list[dict] = []
         if data.repos:
             try:
                 op_results = await asyncio.gather(
@@ -256,6 +292,16 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
                 )
                 for result in op_results:
                     all_operations.extend(result.get("operations", []))
+
+                sys_op_results = await asyncio.gather(
+                    *[
+                        self._api.get_operations(repo_id=repo_id, plan_id="_system_", only_last=10)
+                        for repo_id in data.repos
+                    ],
+                    return_exceptions=False,
+                )
+                for result in sys_op_results:
+                    system_operations.extend(result.get("operations", []))
             except BackrestAuthError as err:
                 raise ConfigEntryAuthFailed(
                     f"Backrest authentication failed: {err}"
@@ -269,6 +315,7 @@ class BackrestCoordinator(DataUpdateCoordinator[BackrestData]):
         # Parse operations into plan data
         operations = all_operations
         _parse_operations(operations, data.plans)
+        _parse_system_operations(system_operations, data.repos)
 
         # Active operations
         data.active_operation_ids = [

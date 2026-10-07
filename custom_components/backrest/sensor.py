@@ -33,6 +33,8 @@ from .const import (
     KEY_NEXT_BACKUP,
     KEY_PLAN_COUNT,
     KEY_REPO_COUNT,
+    KEY_SNAPSHOT_COUNT,
+    KEY_TOTAL_SIZE,
     KEY_ACTIVE_OPERATIONS,
 )
 from .coordinator import BackrestCoordinator, BackrestData, PlanData, RepoData
@@ -100,7 +102,24 @@ INSTANCE_SENSORS: tuple[BackrestSensorDescription, ...] = (
 # Per-repo sensor descriptions
 # ---------------------------------------------------------------------------
 
-REPO_SENSORS: tuple[BackrestRepoSensorDescription, ...] = ()
+REPO_SENSORS: tuple[BackrestRepoSensorDescription, ...] = (
+    BackrestRepoSensorDescription(
+        key=KEY_TOTAL_SIZE,
+        translation_key=KEY_TOTAL_SIZE,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda r: r.total_size,
+    ),
+    BackrestRepoSensorDescription(
+        key=KEY_SNAPSHOT_COUNT,
+        translation_key=KEY_SNAPSHOT_COUNT,
+        icon="mdi:counter",
+        value_fn=lambda r: r.snapshot_count,
+    ),
+)
 
 # ---------------------------------------------------------------------------
 # Per-plan sensor descriptions
